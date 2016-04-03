@@ -1,8 +1,10 @@
-include CREDITS INSTALL LICENSE README.rst
+include CHANGES CREDITS INSTALL LICENSE README.rst
 include requirements_dev.txt
 
 graft aionotify
 
-global-exclude __pycache__
+prune examples
+
+global-exclude .py[cod] __pycache__
 
 exclude Makefile
