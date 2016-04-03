@@ -4,3 +4,7 @@
 
 __version__ = '0.1.0'
 __author__ = 'Raphaël Barrois <raphael.barrois+aionotify@polytechnique.org>'
+
+
+from .enums import Flags
+from .base import Watcher

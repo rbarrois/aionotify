@@ -2,16 +2,17 @@ import asyncio
 import asyncio.streams
 import collections
 import ctypes
-import enum
 import struct
 import os
 
-Event = collections.namedtuple('Event', ['event_mask', 'cookie', 'name'])
+from . import aioutils
+
+Event = collections.namedtuple('Event', ['flags', 'cookie', 'name', 'alias'])
 
 
 _libc = ctypes.cdll.LoadLibrary('libc.so.6')
 
-class INotifyProxy:
+class LibC:
     """Proxy to C functions for inotify"""
     @classmethod
     def inotify_init(cls):
@@ -22,109 +23,74 @@ class INotifyProxy:
         return _libc.inotify_add_watch(fd, path.encode('utf-8'), flags)
 
 
-class FDProxy:
-    SIZE = 1024
-    def __init__(self, fd, stream_reader):
-        self.fd = fd
-        self.reader = stream_reader
-
-    def read_ready(self):
-        try:
-            data = os.read(self.fd, self.SIZE)
-        except OSError:
-            asyncio.get_event_loop().remove_reader(self.fd)
-            raise
-        if data:
-            self.reader.feed_data(data)
-        else:
-            self.reader.feed_eof()
+PREFIX = struct.Struct('iIII')
 
 
-class INotifyStream:
+class Watcher:
 
-    PREFIX = struct.Struct('iIII')
-
-    def __init__(self, path, events):
-        self.path = path
-        self.events = events
+    def __init__(self):
+        self.requests = {}
+        self.descriptors = {}
+        self.aliases = {}
         self._stream = None
-        self._disconnect = False
+        self._transport = None
         self._fd = None
-        self._wd = None
+        self._loop = None
 
-    def setup(self):
-        self._fd = INotifyProxy.inotify_init()
-        self._wd = INotifyProxy.inotify_add_watch(self._fd, self.path, self.events)
-        if self._wd < 0:
-            raise IOError("Got wd %s" % self._wd)
-        self._stream = asyncio.streams.StreamReader()
-        proxy = FDProxy(self._fd, self._stream)
-        loop = asyncio.get_event_loop()
-        loop.add_reader(self._fd, proxy.read_ready)
+    def watch(self, path, flags, *, alias=None):
+        if alias is None:
+            alias = path
+        if alias in self.requests:
+            raise ValueError("A watch request is already scheduled for alias %s" % alias)
+        self.requests[alias] = (path, flags)
+        if self._fd is not None:
+            # We've started
+            self._setup_watch(alias, path, flags)
 
-    def schedule_shutdown(self):
-        self._disconnect = True
+    def unwatch(self, alias):
+        wd = self.descriptors[alias]
+        errno = LibC.inotify_rm_watch(self._fd, wd)
+        if errno != 0:
+            raise IOError("Failed to close watcher %d: errno=%d" % (wd, errno))
+        del self.descriptors[alias]
+        del self.requests[alias]
+        del self.aliases[wd]
+
+    def _setup_watch(self, alias, path, flags):
+        assert alias not in self.descriptors, "Registering alias %s twice!" % alias
+        wd = LibC.inotify_add_watch(self._fd, path, flags)
+        if wd < 0:
+            raise IOError("Got wd %s" % wd)
+        self.descriptors[alias] = wd
+        self.aliases[wd] = alias
+
+    @asyncio.coroutine
+    def setup(self, loop):
+        self._loop = loop
+
+        self._fd = LibC.inotify_init()
+        for alias, (path, flags) in self.requests.items():
+            self._setup_watch(alias, path, flags)
+
+        self._stream, self._transport = yield from aioutils.stream_from_fd(self._fd, loop)
+
+    def close(self):
+        self._transport.close()
 
     @asyncio.coroutine
     def get_event(self):
-        prefix = yield from self._stream.readexactly(self.PREFIX.size)
+        prefix = yield from self._stream.readexactly(PREFIX.size)
         if prefix == b'':
             return
-        wd, event_mask, cookie, length = self.PREFIX.unpack(prefix)
+        wd, flags, cookie, length = PREFIX.unpack(prefix)
         # assert wd == self._wd, "Received an event for another watch descriptor, %s"
         path = yield from self._stream.readexactly(length)
         if path == b'':
             return
         decoded_path = struct.unpack('%ds' % length, path)[0].rstrip(b'\x00').decode('utf-8')
         return Event(
-            event_mask=event_mask,
+            flags=flags,
             cookie=cookie,
             name=decoded_path,
+            alias=self.aliases[wd],
         )
-
-
-class flags(enum.IntEnum):
-    ACCESS = 0x00000001  #: File was accessed
-    MODIFY = 0x00000002  #: File was modified
-    ATTRIB = 0x00000004  #: Metadata changed
-    CLOSE_WRITE = 0x00000008  #: Writable file was closed
-    CLOSE_NOWRITE = 0x00000010  #: Unwritable file closed
-    OPEN = 0x00000020  #: File was opened
-    MOVED_FROM = 0x00000040  #: File was moved from X
-    MOVED_TO  = 0x00000080  #: File was moved to Y
-    CREATE = 0x00000100  #: Subfile was created
-    DELETE = 0x00000200  #: Subfile was deleted
-    DELETE_SELF = 0x00000400  #: Self was deleted
-    MOVE_SELF = 0x00000800  #: Self was moved
-
-    UNMOUNT = 0x00002000  #: Backing fs was unmounted
-    Q_OVERFLOW = 0x00004000  #: Event queue overflowed
-    IGNORED = 0x00008000  #: File was ignored
-
-    ONLYDIR = 0x01000000  #: only watch the path if it is a directory
-    DONT_FOLLOW = 0x02000000  #: don't follow a sym link
-    EXCL_UNLINK = 0x04000000  #: exclude events on unlinked objects
-    MASK_ADD = 0x20000000  #: add to the mask of an already existing watch
-    ISDIR = 0x40000000  #: event occurred against dir
-    ONESHOT = 0x80000000  #: only send event once
-
-    @classmethod
-    def from_mask(cls, mask):
-        return [flag for flag in cls.__members__.values() if flag & mask]
-
-@asyncio.coroutine
-def run():
-    stream = INotifyStream('/tmp/inotify', flags.CREATE)
-    stream.setup()
-
-    for _i in range(10):
-        event = yield from stream.get_event()
-        print(event)
-    stream.schedule_shutdown()
-
-def main():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(run())
-
-
-main()
