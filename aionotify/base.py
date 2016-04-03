@@ -1,3 +1,6 @@
+# Copyright (c) 2016 The aionotify project
+# This code is distributed under the two-clause BSD License.
+
 import asyncio
 import asyncio.streams
 import collections
