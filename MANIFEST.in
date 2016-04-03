@@ -1,0 +1,8 @@
+include CREDITS INSTALL LICENSE README.rst
+include requirements_dev.txt
+
+graft aionotify
+
+global-exclude __pycache__
+
+exclude Makefile

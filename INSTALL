@@ -1,0 +1,13 @@
+Installing aionotify
+====================
+
+Prerequisites:
+
+* Python>=3.4
+
+
+Setup::
+
+    pip install aionotify
+
+.. vim:set ft=rst:
