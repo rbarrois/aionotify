@@ -37,14 +37,15 @@ Its use is quite simple:
 
     # Prepare the loop
     loop = asyncio.get_eventloop()
-    watcher.register(loop)
 
     async def work():
+        await watcher.setup(loop)
         for _i in range(10):
             # Pick the 10 first events
             event = await watcher.get_event()
             print(event)
-        watcher.schedule_shutdown()
+        watcher.close()
 
     loop.run_until_completed(work())
+    loop.stop()
     loop.close()

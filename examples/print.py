@@ -31,7 +31,9 @@ class Example:
         self.task = loop.create_task(self._run(max_events))
 
     def shutdown(self):
-        self.task.cancel()
+        self.watcher.close()
+        if self.task is not None:
+            self.task.cancel()
         self.loop.stop()
 
 
