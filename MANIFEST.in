@@ -4,6 +4,7 @@ include requirements_dev.txt
 graft aionotify
 
 prune examples
+prune tests
 
 global-exclude .py[cod] __pycache__
 

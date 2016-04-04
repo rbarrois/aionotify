@@ -40,6 +40,7 @@ setup(
     setup_requires=[
     ],
     tests_require=[
+        'asynctest',
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
