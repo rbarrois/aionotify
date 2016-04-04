@@ -1,5 +1,14 @@
+PACKAGE := aionotify
+
+CODE_DIRS := aionotify/ tests/ examples/
+
+
 default: test
 
 
 test:
-	python setup.py test
+	tox
+
+
+lint:
+	flake8 $(CODE_DIRS)
