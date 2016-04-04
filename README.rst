@@ -5,7 +5,7 @@ aionotify
     :target: http://travis-ci.org/rbarrois/aionotify/
 
 .. image:: https://img.shields.io/pypi/v/aionotify.svg
-    :target: http://aionotify.readthedocs.org/en/latest/changelog.html
+    :target: https://pypi.python.org/pypi/aionotify/
     :alt: Latest Version
 
 .. image:: https://img.shields.io/pypi/pyversions/aionotify.svg
@@ -49,6 +49,14 @@ Its use is quite simple:
     loop.run_until_completed(work())
     loop.stop()
     loop.close()
+
+
+Links
+-----
+
+* Code at https://github.com/rbarrois/aionotify
+* Package at https://pypi.python.org/pypi/aionotify/
+* Continuous integration at https://travis-ci.org/rbarrois/aionotify/
 
 
 Events
