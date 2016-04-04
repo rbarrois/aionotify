@@ -7,3 +7,6 @@ env:
     - TOXENV=lint
 install: pip install tox
 script: tox -e $TOXENV
+notifications:
+  email: false
+  irc: "irc.freenode.org#XelNext"
