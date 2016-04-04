@@ -28,7 +28,11 @@ class UnixFileDescriptorTransport(asyncio.ReadTransport):
         self._loop.call_soon(self.resume_reading)
         if waiter is not None:
             # only wake up the waiter when connection_made() has been called.
-            self._loop.call_soon(waiter._set_result_unless_cancelled, None)
+            self._loop.call_soon(self._notify_waiter, waiter)
+
+    def _notify_waiter(self, waiter):
+        if not waiter.cancelled():
+            waiter.set_result(None)
 
     def _read_ready(self):
         """Called by the event loop whenever the fd is ready for reading."""

@@ -25,6 +25,10 @@ class LibC:
     def inotify_add_watch(cls, fd, path, flags):
         return _libc.inotify_add_watch(fd, path.encode('utf-8'), flags)
 
+    @classmethod
+    def inotify_rm_watch(cls, fd, wd):
+        return _libc.inotify_rm_watch(fd, wd)
+
 
 PREFIX = struct.Struct('iIII')
 
@@ -33,6 +37,9 @@ class Watcher:
 
     def __init__(self):
         self.requests = {}
+        self._reset()
+
+    def _reset(self):
         self.descriptors = {}
         self.aliases = {}
         self._stream = None
@@ -51,6 +58,8 @@ class Watcher:
             self._setup_watch(alias, path, flags)
 
     def unwatch(self, alias):
+        if alias not in self.descriptors:
+            raise ValueError("Unknown watch alias %s; current set is %r" % (alias, list(self.descriptors.keys())))
         wd = self.descriptors[alias]
         errno = LibC.inotify_rm_watch(self._fd, wd)
         if errno != 0:
@@ -75,25 +84,34 @@ class Watcher:
         for alias, (path, flags) in self.requests.items():
             self._setup_watch(alias, path, flags)
 
+        # We pass ownership of the fd to the transport; it will close it.
         self._stream, self._transport = yield from aioutils.stream_from_fd(self._fd, loop)
 
     def close(self):
         self._transport.close()
+        self._reset()
+
+    @property
+    def closed(self):
+        return self._transport is None
 
     @asyncio.coroutine
     def get_event(self):
-        prefix = yield from self._stream.readexactly(PREFIX.size)
-        if prefix == b'':
-            return
-        wd, flags, cookie, length = PREFIX.unpack(prefix)
-        # assert wd == self._wd, "Received an event for another watch descriptor, %s"
-        path = yield from self._stream.readexactly(length)
-        if path == b'':
-            return
-        decoded_path = struct.unpack('%ds' % length, path)[0].rstrip(b'\x00').decode('utf-8')
-        return Event(
-            flags=flags,
-            cookie=cookie,
-            name=decoded_path,
-            alias=self.aliases[wd],
-        )
+        while True:
+            prefix = yield from self._stream.readexactly(PREFIX.size)
+            if prefix == b'':
+                # We got closed, return None.
+                return
+            wd, flags, cookie, length = PREFIX.unpack(prefix)
+            path = yield from self._stream.readexactly(length)
+            if path.strip(b'\x00') == b'':
+                # We received an empty event, i.e an event for something we no longer watch.
+                continue
+
+            decoded_path = struct.unpack('%ds' % length, path)[0].rstrip(b'\x00').decode('utf-8')
+            return Event(
+                flags=flags,
+                cookie=cookie,
+                name=decoded_path,
+                alias=self.aliases[wd],
+            )
