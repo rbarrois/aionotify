@@ -6,5 +6,5 @@ from .base import Watcher
 
 __all__ = ['Flags', 'Watcher']
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 __author__ = 'Raphaël Barrois <raphael.barrois+aionotify@polytechnique.org>'
