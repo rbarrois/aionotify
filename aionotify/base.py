@@ -118,8 +118,10 @@ class Watcher:
                 return
             wd, flags, cookie, length = PREFIX.unpack(prefix)
             path = yield from self._stream.readexactly(length)
-            if path.strip(b'\x00') == b'':
-                # We received an empty event, i.e an event for something we no longer watch.
+
+            # All async performed, time to look at the event's content.
+            if wd not in self.aliases:
+                # Event for a removed watch, skip it.
                 continue
 
             decoded_path = struct.unpack('%ds' % length, path)[0].rstrip(b'\x00').decode('utf-8')

@@ -165,6 +165,19 @@ class SimpleUsageTests(AIONotifyTestCase):
         yield from self._assert_no_events()
 
     @asyncio.coroutine
+    def test_watch_unwatch_before_drain(self):
+        """Watches can be removed, no events occur afterwards."""
+        self.watcher.watch(self.testdir, aionotify.Flags.CREATE)
+        yield from self.watcher.setup(self.loop)
+
+        # Touch a file before unwatching
+        self._touch('a')
+        self.watcher.unwatch(self.testdir)
+
+        # We shouldn't see anything.
+        yield from self._assert_no_events()
+
+    @asyncio.coroutine
     def test_rename_detection(self):
         """A file rename can be detected through event cookies."""
         self.watcher.watch(self.testdir, aionotify.Flags.MOVED_FROM | aionotify.Flags.MOVED_TO)
