@@ -6,7 +6,6 @@ import asyncio.streams
 import collections
 import ctypes
 import struct
-import os
 
 from . import aioutils
 
@@ -14,6 +13,7 @@ Event = collections.namedtuple('Event', ['flags', 'cookie', 'name', 'alias'])
 
 
 _libc = ctypes.cdll.LoadLibrary('libc.so.6')
+
 
 class LibC:
     """Proxy to C functions for inotify"""

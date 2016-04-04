@@ -12,7 +12,7 @@ class Flags(enum.IntEnum):
     CLOSE_NOWRITE = 0x00000010  #: Unwritable file closed
     OPEN = 0x00000020  #: File was opened
     MOVED_FROM = 0x00000040  #: File was moved from X
-    MOVED_TO  = 0x00000080  #: File was moved to Y
+    MOVED_TO = 0x00000080  #: File was moved to Y
     CREATE = 0x00000100  #: Subfile was created
     DELETE = 0x00000200  #: Subfile was deleted
     DELETE_SELF = 0x00000400  #: Self was deleted
@@ -32,4 +32,3 @@ class Flags(enum.IntEnum):
     @classmethod
     def parse(cls, flags):
         return [flag for flag in cls.__members__.values() if flag & flags]
-

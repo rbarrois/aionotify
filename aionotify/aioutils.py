@@ -140,6 +140,5 @@ def stream_from_fd(fd, loop):
         raise
 
     if loop.get_debug():
-        logger.debug("Read fd %r connected: (%r, %r)",
-            fd, transport, protocol)
+        logger.debug("Read fd %r connected: (%r, %r)", fd, transport, protocol)
     return reader, transport
