@@ -49,3 +49,40 @@ Its use is quite simple:
     loop.run_until_completed(work())
     loop.stop()
     loop.close()
+
+
+Events
+------
+
+An event is a simple object with a few attributes:
+
+* ``name``: the path of the modified file
+* ``flags``: the modification flag; use ``aionotify.Flags.parse()`` to retrieve a list of individual values.
+* ``alias``: the alias of the watch triggering the event
+* ``cookie``: for renames, this integer value links the "renamed from" and "renamed to" events.
+
+
+Watches
+-------
+
+``aionotify`` uses a system of "watches", similar to inotify.
+
+A watch may have an alias; by default, it uses the path name:
+
+.. code-block:: python
+
+    watcher = aionotify.Watcher()
+    watcher.watch('/var/log', flags=aionotify.Flags.MODIFY)
+
+    # Similar to:
+    watcher.watch('/var/log', flags=aionotify.Flags.MODIFY, alias='/var/log')
+
+
+A watch can be removed by using its alias:
+
+.. code-block:: python
+
+    watcher = aionotify.Watcher()
+    watcher.watch('/var/log', flags=aionotify.Flags.MODIFY)
+
+    watcher.unwatch('/var/log')

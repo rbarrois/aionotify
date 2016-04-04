@@ -48,16 +48,18 @@ class Watcher:
         self._loop = None
 
     def watch(self, path, flags, *, alias=None):
+        """Add a new watching rule."""
         if alias is None:
             alias = path
         if alias in self.requests:
             raise ValueError("A watch request is already scheduled for alias %s" % alias)
         self.requests[alias] = (path, flags)
         if self._fd is not None:
-            # We've started
+            # We've started, register the watch immediately.
             self._setup_watch(alias, path, flags)
 
     def unwatch(self, alias):
+        """Stop watching a given rule."""
         if alias not in self.descriptors:
             raise ValueError("Unknown watch alias %s; current set is %r" % (alias, list(self.descriptors.keys())))
         wd = self.descriptors[alias]
@@ -69,15 +71,18 @@ class Watcher:
         del self.aliases[wd]
 
     def _setup_watch(self, alias, path, flags):
+        """Actual rule setup."""
         assert alias not in self.descriptors, "Registering alias %s twice!" % alias
         wd = LibC.inotify_add_watch(self._fd, path, flags)
         if wd < 0:
-            raise IOError("Got wd %s" % wd)
+            raise IOError("Error setting up watch on %s with flags %s: wd=%s" % (
+                path, flags, wd))
         self.descriptors[alias] = wd
         self.aliases[wd] = alias
 
     @asyncio.coroutine
     def setup(self, loop):
+        """Start the watcher, registering new watches if any."""
         self._loop = loop
 
         self._fd = LibC.inotify_init()
@@ -88,15 +93,24 @@ class Watcher:
         self._stream, self._transport = yield from aioutils.stream_from_fd(self._fd, loop)
 
     def close(self):
+        """Schedule closure.
+
+        This will close the transport and all related resources.
+        """
         self._transport.close()
         self._reset()
 
     @property
     def closed(self):
+        """Are we closed?"""
         return self._transport is None
 
     @asyncio.coroutine
     def get_event(self):
+        """Fetch an event.
+
+        This coroutine will swallow events for removed watches.
+        """
         while True:
             prefix = yield from self._stream.readexactly(PREFIX.size)
             if prefix == b'':
