@@ -75,8 +75,8 @@ class Watcher:
         assert alias not in self.descriptors, "Registering alias %s twice!" % alias
         wd = LibC.inotify_add_watch(self._fd, path, flags)
         if wd < 0:
-            raise IOError("Error setting up watch on %s with flags %s: wd=%s" % (
-                path, flags, wd))
+            raise IOError("Error setting up watch on %s with flags %s: errno=%d" % (
+                path, flags, ctypes.get_errno()))
         self.descriptors[alias] = wd
         self.aliases[wd] = alias
 
