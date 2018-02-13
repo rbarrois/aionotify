@@ -12,7 +12,7 @@ from . import aioutils
 Event = collections.namedtuple('Event', ['flags', 'cookie', 'name', 'alias'])
 
 
-_libc = ctypes.cdll.LoadLibrary('libc.so.6')
+_libc = ctypes.CDLL('libc.so.6', use_errno=True)
 
 
 class LibC:
