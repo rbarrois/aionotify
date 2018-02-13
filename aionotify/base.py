@@ -65,7 +65,8 @@ class Watcher:
         wd = self.descriptors[alias]
         errno = LibC.inotify_rm_watch(self._fd, wd)
         if errno != 0:
-            raise IOError("Failed to close watcher %d: errno=%d" % (wd, errno))
+            raise IOError("Failed to close watcher %d: errno=%d" % (
+                wd, ctypes.get_errno()))
         del self.descriptors[alias]
         del self.requests[alias]
         del self.aliases[wd]
@@ -86,6 +87,9 @@ class Watcher:
         self._loop = loop
 
         self._fd = LibC.inotify_init()
+        if self._fd < 0:
+            raise IOError("Error setting up inotify on loop %s: errno=%d" % (
+                loop, ctypes.get_errno()))
         for alias, (path, flags) in self.requests.items():
             self._setup_watch(alias, path, flags)
 
