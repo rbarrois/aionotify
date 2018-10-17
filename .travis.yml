@@ -1,12 +1,22 @@
 sudo: false
 language: python
-python: 3.6
-env:
-    - TOXENV=py35
-    - TOXENV=py36
-    - TOXENV=lint
-install: pip install tox
-script: tox -e $TOXENV
+cache: pip
+
+script:
+  - tox
+
+install:
+  - pip install tox
+
+matrix:
+  include:
+    - python: "3.5"
+      env: TOXENV=py35
+    - python: "3.6"
+      env: TOXENV=py36
+    - python: "3.6"
+      env: TOXENV=lint
+
 notifications:
   email: false
   irc: "irc.freenode.org#XelNext"
