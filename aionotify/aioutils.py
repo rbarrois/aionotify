@@ -135,9 +135,8 @@ def stream_from_fd(fd, loop):
 
     try:
         yield from waiter
-    except:
+    except Exception:
         transport.close()
-        raise
 
     if loop.get_debug():
         logger.debug("Read fd %r connected: (%r, %r)", fd, transport, protocol)
