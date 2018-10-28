@@ -5,6 +5,7 @@ import asyncio
 import asyncio.streams
 import collections
 import ctypes
+import os
 import struct
 
 from . import aioutils
@@ -23,7 +24,7 @@ class LibC:
 
     @classmethod
     def inotify_add_watch(cls, fd, path, flags):
-        return _libc.inotify_add_watch(fd, path.encode('utf-8'), flags)
+        return _libc.inotify_add_watch(fd, os.fsencode(path), flags)
 
     @classmethod
     def inotify_rm_watch(cls, fd, wd):
