@@ -7,7 +7,7 @@ import collections
 import ctypes
 import struct
 
-from . import aioutils
+from . import aioutils, enums
 
 Event = collections.namedtuple('Event', ['flags', 'cookie', 'name', 'alias'])
 
@@ -124,10 +124,16 @@ class Watcher:
                 # Event for a removed watch, skip it.
                 continue
 
+            alias = self.aliases[wd]
+            if flags & enums.Flags.IGNORED:
+                del self.descriptors[alias]
+                del self.requests[alias]
+                del self.aliases[wd]
+
             decoded_path = struct.unpack('%ds' % length, path)[0].rstrip(b'\x00').decode('utf-8')
             return Event(
                 flags=flags,
                 cookie=cookie,
                 name=decoded_path,
-                alias=self.aliases[wd],
+                alias=alias,
             )
