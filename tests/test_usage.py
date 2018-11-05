@@ -59,6 +59,14 @@ class AIONotifyTestCase(asynctest.TestCase):
         path = os.path.join(parent or self.testdir, filename)
         os.unlink(path)
 
+    def _mkdir(self, dirname, *, parent=None):
+        path = os.path.join(parent or self.testdir, dirname)
+        os.mkdir(path)
+
+    def _rmdir(self, dirname, *, parent=None):
+        path = os.path.join(parent or self.testdir, dirname)
+        os.rmdir(path)
+
     def _rename(self, source, target, *, parent=None):
         source_path = os.path.join(parent or self.testdir, source)
         target_path = os.path.join(parent or self.testdir, target)
@@ -195,6 +203,24 @@ class SimpleUsageTests(AIONotifyTestCase):
         self.assertEqual(event1.cookie, event2.cookie)
 
         # And it's over.
+        yield from self._assert_no_events()
+
+    @asyncio.coroutine
+    def test_remove_directory(self):
+        """ A deleted file or directory should be unwatched."""
+        full_path = os.path.join(self.testdir, 'a')
+        self._mkdir('a')
+        self.watcher.watch(full_path, aionotify.Flags.IGNORED)
+        yield from self.watcher.setup(self.loop)
+
+        self._rmdir('a')
+        event = yield from self.watcher.get_event()
+        self._assert_file_event(event, '', flags=aionotify.Flags.IGNORED, alias=full_path)
+
+        # Make sure we can watch the same path again (#2)
+        self._mkdir('a')
+        self.watcher.watch(full_path, aionotify.Flags.IGNORED)
+
         yield from self._assert_no_events()
 
 
