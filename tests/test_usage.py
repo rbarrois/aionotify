@@ -197,6 +197,20 @@ class SimpleUsageTests(AIONotifyTestCase):
         # And it's over.
         yield from self._assert_no_events()
 
+    @asyncio.coroutine
+    def test_watch_after_created(self):
+        """It should be possible to retry watching a file that didn't exist."""
+        yield from self.watcher.setup(self.loop)
+
+        full_path = os.path.join(self.testdir, 'a')
+        with self.assertRaises(OSError):
+            self.watcher.watch(full_path, aionotify.Flags.MODIFY)
+
+        self._touch('a')
+        self.watcher.watch(full_path, aionotify.Flags.MODIFY)
+
+        yield from self._assert_no_events()
+
 
 class ErrorTests(AIONotifyTestCase):
     """Test error cases."""
