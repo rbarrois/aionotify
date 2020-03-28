@@ -1,6 +1,7 @@
 # Copyright (c) 2016 The aionotify project
 # This code is distributed under the two-clause BSD License.
 
+import os
 import asyncio
 import asyncio.streams
 import collections
@@ -49,6 +50,7 @@ class Watcher:
 
     def watch(self, path, flags, *, alias=None):
         """Add a new watching rule."""
+        path = os.fspath(path)
         if alias is None:
             alias = path
         if alias in self.requests:
