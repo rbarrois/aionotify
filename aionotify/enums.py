@@ -30,5 +30,5 @@ class Flags(enum.IntEnum):
     ONESHOT = 0x80000000  #: only send event once
 
     @classmethod
-    def parse(cls, flags):
-        return [flag for flag in cls.__members__.values() if flag & flags]
+    def parse(cls, event):
+        return [flag for flag in cls.__members__.values() if flag & event.flags]
