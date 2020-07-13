@@ -40,7 +40,7 @@ setup(
     setup_requires=[
     ],
     tests_require=[
-        'asynctest',
+        'asynctest; python_version<"3.8"',
     ],
     classifiers=[
         "Development Status :: 4 - Beta",

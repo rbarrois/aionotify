@@ -8,7 +8,11 @@ import os.path
 import tempfile
 import unittest
 
-import asynctest
+try:
+    testBase = unittest.IsolatedAsyncioTestCase
+except AttributeError:
+    import asynctest
+    testBase = asynctest.TestCase
 
 import aionotify
 
@@ -25,11 +29,13 @@ if AIODEBUG:
 TESTDIR = os.environ.get('AIOTESTDIR') or os.path.join(os.path.dirname(__file__), 'testevents')
 
 
-class AIONotifyTestCase(asynctest.TestCase):
+class AIONotifyTestCase(testBase):
     forbid_get_event_loop = True
     timeout = 3
 
     def setUp(self):
+        if not getattr (self, 'loop', None):
+            self.loop = asyncio.get_event_loop()
         if AIODEBUG:
             self.loop.set_debug(True)
         self.watcher = aionotify.Watcher()
