@@ -1,6 +1,8 @@
 # Copyright (c) 2016 The aionotify project
 # This code is distributed under the two-clause BSD License.
 
+from typing import Union
+from pathlib import Path
 import asyncio
 import asyncio.streams
 import collections
@@ -23,7 +25,7 @@ class LibC:
         return _libc.inotify_init()
 
     @classmethod
-    def inotify_add_watch(cls, fd, path, flags):
+    def inotify_add_watch(cls, fd, path: Union[str, Path], flags):
         return _libc.inotify_add_watch(fd, os.fsencode(path), flags)
 
     @classmethod
@@ -48,10 +50,10 @@ class Watcher:
         self._fd = None
         self._loop = None
 
-    def watch(self, path, flags, *, alias=None):
+    def watch(self, path, flags, *, alias: str = None):
         """Add a new watching rule."""
         if alias is None:
-            alias = path
+            alias = str(path)
         if alias in self.requests:
             raise ValueError("A watch request is already scheduled for alias %s" % alias)
         self.requests[alias] = (path, flags)
@@ -71,7 +73,7 @@ class Watcher:
         del self.requests[alias]
         del self.aliases[wd]
 
-    def _setup_watch(self, alias, path, flags):
+    def _setup_watch(self, alias, path: Union[str, Path], flags):
         """Actual rule setup."""
         assert alias not in self.descriptors, "Registering alias %s twice!" % alias
         wd = LibC.inotify_add_watch(self._fd, path, flags)

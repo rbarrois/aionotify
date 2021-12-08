@@ -12,3 +12,4 @@ test:
 
 lint:
 	flake8 $(CODE_DIRS)
+	mypy --install-types --non-interactive $(CODE_DIRS)

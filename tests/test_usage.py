@@ -1,20 +1,23 @@
 # Copyright (c) 2016 The aionotify project
 # This code is distributed under the two-clause BSD License.
 
+from typing import Type
 import asyncio
 import logging
 import os
 import os.path
 import tempfile
 import unittest
-
-try:
-    testBase = unittest.IsolatedAsyncioTestCase
-except AttributeError:
-    import asynctest
-    testBase = asynctest.TestCase
+from pathlib import Path
 
 import aionotify
+
+TestBase: Type[object]
+try:
+    TestBase = unittest.IsolatedAsyncioTestCase
+except AttributeError:
+    import asynctest  # type: ignore
+    TestBase = asynctest.TestCase
 
 
 AIODEBUG = bool(os.environ.get('PYTHONAIODEBUG') == '1')
@@ -29,9 +32,9 @@ if AIODEBUG:
 TESTDIR = os.environ.get('AIOTESTDIR') or os.path.join(os.path.dirname(__file__), 'testevents')
 
 
-class AIONotifyTestCase(testBase):
+class AIONotifyTestCase(TestBase):  # type: ignore
     forbid_get_event_loop = True
-    timeout = 3
+    timeout = 3.
 
     def setUp(self):
         if not getattr(self, 'loop', None):
@@ -41,6 +44,7 @@ class AIONotifyTestCase(testBase):
         self.watcher = aionotify.Watcher()
         self._testdir = tempfile.TemporaryDirectory(dir=TESTDIR)
         self.testdir = self._testdir.name
+        self.testdirpath = Path(self.testdir)
 
         # Schedule a loop shutdown
         self.loop.call_later(self.timeout, self.loop.stop)
@@ -101,6 +105,20 @@ class SimpleUsageTests(AIONotifyTestCase):
     def test_watch_before_start(self):
         """A watch call is valid before startup."""
         self.watcher.watch(self.testdir, aionotify.Flags.CREATE)
+        yield from self.watcher.setup(self.loop)
+
+        # Touch a file: we get the event.
+        self._touch('a')
+        event = yield from self.watcher.get_event()
+        self._assert_file_event(event, 'a')
+
+        # And it's over.
+        yield from self._assert_no_events()
+
+    @asyncio.coroutine
+    def test_watch_before_start_path(self):
+        """A watch call is valid before startup."""
+        self.watcher.watch(self.testdirpath, aionotify.Flags.CREATE)
         yield from self.watcher.setup(self.loop)
 
         # Touch a file: we get the event.

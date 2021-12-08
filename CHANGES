@@ -8,10 +8,14 @@ ChangeLog
 
 *Bugfix:*
 
+*New:*
+
+    - Accept path-like objects as (https://github.com/rbarrois/aionotify/pull/4)
+
 *Minor Changes:*
 
     - Use stdlib's ``unittest.IsolatedAsyncioTestCase`` when possible
-      (python > 3.7)
+      (python > 3.7) (from https://github.com/rbarrois/aionotify/pull/15 )
 
 *Removal:*
 
