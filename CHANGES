@@ -1,6 +1,23 @@
 ChangeLog
 =========
 
+.. _v0.3.0:
+
+0.3.0 (unreleased)
+------------------
+
+*Bugfix:*
+
+*Minor Changes:*
+
+    - Use stdlib's ``unittest.IsolatedAsyncioTestCase`` when possible
+      (python > 3.7)
+
+*Removal:*
+
+    - Drop support of Python<3.7 (EoL)
+    - Add support for python 3.7, 3.8, 3.9, 3.10
+
 .. _v0.2.0:
 
 0.2.0 (2016-04-04)

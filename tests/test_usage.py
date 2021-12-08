@@ -34,7 +34,7 @@ class AIONotifyTestCase(testBase):
     timeout = 3
 
     def setUp(self):
-        if not getattr (self, 'loop', None):
+        if not getattr(self, 'loop', None):
             self.loop = asyncio.get_event_loop()
         if AIODEBUG:
             self.loop.set_debug(True)
@@ -87,7 +87,7 @@ class AIONotifyTestCase(testBase):
         """Ensure that no events are left in the queue."""
         task = self.watcher.get_event()
         try:
-            result = yield from asyncio.wait_for(task, timeout, loop=self.loop)
+            result = yield from asyncio.wait_for(task, timeout)
         except asyncio.TimeoutError:
             # All fine: we didn't receive any event.
             pass
