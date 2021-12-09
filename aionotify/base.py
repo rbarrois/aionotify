@@ -1,7 +1,7 @@
 # Copyright (c) 2016 The aionotify project
 # This code is distributed under the two-clause BSD License.
 
-from typing import Union, Optional
+from typing import Union, Optional, AsyncIterator
 from pathlib import Path
 from asyncio import get_event_loop, AbstractEventLoop
 import collections
@@ -39,6 +39,7 @@ class Watcher:
 
     def __init__(self):
         self.requests = {}
+        self._start_iter = False
         self._reset()
 
     def _reset(self):
@@ -106,11 +107,11 @@ class Watcher:
         self._reset()
 
     @property
-    def closed(self):
+    def closed(self) -> bool:
         """Are we closed?"""
         return self._transport is None
 
-    async def get_event(self):
+    async def get_event(self) -> Optional[Event]:
         """Fetch an event.
 
         This coroutine will swallow events for removed watches.
@@ -119,7 +120,7 @@ class Watcher:
             prefix = await self._stream.readexactly(PREFIX.size)
             if prefix == b"":
                 # We got closed, return None.
-                return
+                return None
             wd, flags, cookie, length = PREFIX.unpack(prefix)
             path = await self._stream.readexactly(length)
 
@@ -141,3 +142,16 @@ class Watcher:
                 name=decoded_path,
                 alias=alias,
             )
+
+    def __aiter__(self) -> AsyncIterator[Event]:
+        self._start_iter = True
+        return self
+
+    async def __anext__(self) -> Event:
+        if self.closed and self._start_iter:
+            await self.setup()
+            self._start_iter = False
+        evt = await self.get_event()
+        if evt is None:
+            raise StopAsyncIteration
+        return evt

@@ -36,11 +36,12 @@ Its use is quite simple:
     watcher.watch(alias='logs', path='/var/log', flags=aionotify.Flags.MODIFY)
 
     async def work():
-        await watcher.setup()
-        for _i in range(10):
-            # Pick the 10 first events
-            event = await watcher.get_event()
+	remains = 10
+        async for event in watcher:
             print(event)
+            remains -= 1
+            if not remains:
+                break
         watcher.close()
 
     loop.run_until_completed(work())

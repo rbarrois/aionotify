@@ -1,5 +1,6 @@
 # Copyright (c) 2016 The aionotify project
 # This code is distributed under the two-clause BSD License.
+from typing import List
 
 import enum
 
@@ -30,5 +31,5 @@ class Flags(enum.IntEnum):
     ONESHOT = 0x80000000  #: only send event once
 
     @classmethod
-    def parse(cls, flags):
+    def parse(cls, flags) -> List[int]:
         return [flag for flag in cls.__members__.values() if flag & flags]
