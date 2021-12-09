@@ -8,11 +8,13 @@ import collections
 import ctypes
 import os
 import struct
+import logging
 
 from . import aioutils, enums
 
-Event = collections.namedtuple("Event", ["flags", "cookie", "name", "alias"])
+logger = logging.getLogger(__name__)
 
+Event = collections.namedtuple("Event", ["flags", "cookie", "name", "alias"])
 
 _libc = ctypes.cdll.LoadLibrary("libc.so.6")
 
@@ -155,3 +157,12 @@ class Watcher:
         if evt is None:
             raise StopAsyncIteration
         return evt
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        try:
+            self.close()
+        except Exception:
+            logger.exception("Error while closing the watcher:")
