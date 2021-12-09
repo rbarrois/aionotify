@@ -83,7 +83,8 @@ class AIONotifyTestCase(TestBase):  # type: ignore
         target_path = os.path.join(parent or self.testdir, target)
         os.rename(source_path, target_path)
 
-    def _assert_file_event(self, event, name, flags=aionotify.Flags.CREATE, alias=None):
+    def _assert_file_event(self, event, name, flags=aionotify.Flags.CREATE,
+                           alias=None):
         """Check for an expected file event.
 
         Allows for more readable tests.
@@ -94,6 +95,9 @@ class AIONotifyTestCase(TestBase):  # type: ignore
         self.assertEqual(name, event.name)
         self.assertEqual(flags, event.flags)
         self.assertEqual(alias, event.alias)
+
+    def _assert_watcher_closed(self):
+        self.assertTrue(self.watcher.closed)
 
     async def _assert_no_events(self, timeout=0.1):
         """Ensure that no events are left in the queue."""
@@ -123,7 +127,7 @@ class SimpleUsageTests(AIONotifyTestCase):
         await self._assert_no_events()
 
     async def test_watch_before_start_path(self):
-        """A watch call is valid before startup."""
+        """A watch call is valid before startup, using a Path"""
         self.watcher.watch(self.testdirpath, aionotify.Flags.CREATE)
         await self.watcher.setup()
 
@@ -147,6 +151,50 @@ class SimpleUsageTests(AIONotifyTestCase):
 
         # And it's over.
         await self._assert_no_events()
+
+    async def test_watcher_iterator(self):
+        self.watcher.watch(self.testdir, aionotify.Flags.CREATE)
+
+        self.loop.call_later(0.03, self._touch, "a")
+        self.loop.call_later(0.03, self._touch, "b")
+        self.loop.call_later(0.05, self.watcher.close)
+
+        a_seen = False
+        async for event in self.watcher:
+            if not a_seen:
+                self.assertEqual(event.name, "a")
+                a_seen = True
+            else:
+                self.assertEqual(event.name, "b")
+
+        # And it's closed.
+        self._assert_watcher_closed()
+
+    async def test_watcher_context_OK(self):
+        self.watcher.watch(self.testdir, aionotify.Flags.CREATE)
+
+        async with self.watcher:
+            # Touch a file: we get the event.
+            self._touch("a")
+            event = await self.watcher.get_event()
+            self._assert_file_event(event, "a")
+
+        # And it's closed.
+        self._assert_watcher_closed()
+
+    async def test_watcher_context_KO(self):
+        self.watcher.watch(self.testdir, aionotify.Flags.CREATE)
+
+        with self.assertRaises(ZeroDivisionError):
+            async with self.watcher:
+                # Touch a file: we get the event.
+                self._touch("a")
+                event = await self.watcher.get_event()
+                self._assert_file_event(event, "a")
+                1/0
+
+        # And it's closed.
+        self._assert_watcher_closed()
 
     async def test_duplicate_alias_raises(self):
         """A watch call is valid after startup."""
@@ -285,4 +333,4 @@ class SanityTests(AIONotifyTestCase):
     async def test_timeout_works(self):
         """A test cannot run longer than the defined timeout."""
         # This test should fail, since we're setting a global timeout of 0.1 yet ask to wait for 0.3 seconds.
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.2)

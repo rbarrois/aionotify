@@ -3,7 +3,7 @@
 
 from typing import Union, Optional, AsyncIterator
 from pathlib import Path
-from asyncio import get_event_loop, AbstractEventLoop
+from asyncio import get_event_loop, AbstractEventLoop, IncompleteReadError
 import collections
 import ctypes
 import os
@@ -88,7 +88,7 @@ class Watcher:
         self.descriptors[alias] = wd
         self.aliases[wd] = alias
 
-    async def setup(self, loop: Optional[AbstractEventLoop] = None):
+    async def setup(self, loop: Optional[AbstractEventLoop] = None) -> "Watcher":
         """Start the watcher, registering new watches if any."""
         self._loop = loop if loop is not None else get_event_loop()
 
@@ -99,6 +99,7 @@ class Watcher:
         # We pass ownership of the fd to the transport; it will close it.
         self._stream, self._transport = await aioutils.stream_from_fd(
             self._fd, loop)
+        return self
 
     def close(self):
         """Schedule closure.
@@ -119,10 +120,14 @@ class Watcher:
         This coroutine will swallow events for removed watches.
         """
         while True:
-            prefix = await self._stream.readexactly(PREFIX.size)
-            if prefix == b"":
-                # We got closed, return None.
-                return None
+            try:
+                prefix = await self._stream.readexactly(PREFIX.size)
+            except IncompleteReadError as e:
+                if len(e.partial) == 0:
+                    # We got closed, return None.
+                    return None
+                else:  # pragma: nocover
+                    raise
             wd, flags, cookie, length = PREFIX.unpack(prefix)
             path = await self._stream.readexactly(length)
 
@@ -137,7 +142,8 @@ class Watcher:
                 del self.requests[alias]
                 del self.aliases[wd]
 
-            decoded_path = struct.unpack("%ds" % length, path)[0].rstrip(b"\x00").decode("utf-8")
+            decoded_path = struct.unpack(
+                "%ds" % length, path)[0].rstrip(b"\x00").decode("utf-8")
             return Event(
                 flags=flags,
                 cookie=cookie,
@@ -158,11 +164,13 @@ class Watcher:
             raise StopAsyncIteration
         return evt
 
-    def __enter__(self):
+    async def __aenter__(self) -> "Watcher":
+        if self.closed:
+            await self.setup()
         return self
 
-    def __exit__(self, *args):
+    async def __aexit__(self, *args):
         try:
             self.close()
-        except Exception:
+        except Exception:  # pragma: nocover
             logger.exception("Error while closing the watcher:")

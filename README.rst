@@ -34,9 +34,10 @@ Its use is quite simple:
     import asyncio
     import aionotify
 
+
     async def work():
         # Setup the watcher
-        with aionotify.Watcher() as watcher:
+        async with aionotify.Watcher() as watcher:
             watcher.watch(alias='logs', path='/tmp', flags=aionotify.Flags.MODIFY)
             # Run the main loop
             async for event in watcher:
@@ -45,9 +46,24 @@ Its use is quite simple:
                 # the task, or break on a specific event.
                 break
 
-    loop.run_until_completed(work())
-    loop.stop()
-    loop.close()
+    asyncio.run(work())
+
+If one needs more control over the watcher (e.g. to add and remove watches
+dynamically), it can be configured outside of the context manager
+
+    import asyncio
+    import aionotify
+
+    watcher = aionotify.Watcher()
+
+    async def work():
+        watcher.watch(alias='logs', path='/tmp', flags=aionotify.Flags.MODIFY)
+        # Run the main loop
+        async for event in watcher:
+            print(event)
+            break
+
+    asyncio.run(work())
 
 
 Links
@@ -81,7 +97,7 @@ A watch may have an alias; by default, it uses the path name:
     watcher = aionotify.Watcher()
     watcher.watch('/var/log', flags=aionotify.Flags.MODIFY)
 
-    # Similar to:
+    # Equivalent to:
     watcher.watch('/var/log', flags=aionotify.Flags.MODIFY, alias='/var/log')
 
 
