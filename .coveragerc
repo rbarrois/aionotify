@@ -1,0 +1,6 @@
+[run]
+branch=True
+source=aionotify
+
+[report]
+show_missing=True

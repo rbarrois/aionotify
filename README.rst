@@ -35,11 +35,8 @@ Its use is quite simple:
     watcher = aionotify.Watcher()
     watcher.watch(alias='logs', path='/var/log', flags=aionotify.Flags.MODIFY)
 
-    # Prepare the loop
-    loop = asyncio.get_eventloop()
-
     async def work():
-        await watcher.setup(loop)
+        await watcher.setup()
         for _i in range(10):
             # Pick the 10 first events
             event = await watcher.get_event()
