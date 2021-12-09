@@ -20,11 +20,10 @@ class Example:
         self.watcher = aionotify.Watcher()
         self.watcher.watch(path, aionotify.Flags.MODIFY | aionotify.Flags.CREATE | aionotify.Flags.DELETE)
 
-    @asyncio.coroutine
-    def _run(self, max_events):
-        yield from self.watcher.setup(self.loop)
+    async def _run(self, max_events):
+        await self.watcher.setup(self.loop)
         for _i in range(max_events):
-            event = yield from self.watcher.get_event()
+            event = await self.watcher.get_event()
             print(event.name, aionotify.Flags.parse(event.flags))
         self.shutdown()
 
