@@ -20,9 +20,12 @@ aionotify
     :target: https://pypi.python.org/pypi/aionotify/
     :alt: License
 
+This is a fork of aionotify. It includes long running PRs and improvments,
+such as an async iterator. It should be fully backward-compatible with
+aionotify, but we now support only python >= 3.7 (while aionotify supported
+only 3.5 and 3.6).
 
 ``aionotify`` is a simple, asyncio-based inotify library.
-
 
 Its use is quite simple:
 
@@ -31,17 +34,16 @@ Its use is quite simple:
     import asyncio
     import aionotify
 
-    # Setup the watcher
-    watcher = aionotify.Watcher()
-    watcher.watch(alias='logs', path='/var/log', flags=aionotify.Flags.MODIFY)
-
     async def work():
-	remains = 10
+        # Setup the watcher
+        watcher = aionotify.Watcher()
+        watcher.watch(alias='logs', path='/var/log', flags=aionotify.Flags.MODIFY)
+        # Run the main loop
         async for event in watcher:
             print(event)
-            remains -= 1
-            if not remains:
-                break
+            # We have to break at some point. Real code would cancel
+            # the task, or break on a specific event.
+            break
         watcher.close()
 
     loop.run_until_completed(work())
