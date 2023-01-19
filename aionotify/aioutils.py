@@ -119,8 +119,7 @@ class UnixFileDescriptorTransport(asyncio.ReadTransport):
         return '<%s>' % ' '.join(parts)
 
 
-@asyncio.coroutine
-def stream_from_fd(fd, loop):
+async def stream_from_fd(fd, loop):
     """Recieve a streamer for a given file descriptor."""
     reader = asyncio.StreamReader(loop=loop)
     protocol = asyncio.StreamReaderProtocol(reader, loop=loop)
@@ -134,7 +133,7 @@ def stream_from_fd(fd, loop):
     )
 
     try:
-        yield from waiter
+        await waiter
     except Exception:
         transport.close()
 
