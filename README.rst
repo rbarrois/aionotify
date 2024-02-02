@@ -1,9 +1,6 @@
 aionotify
 =========
 
-.. image:: https://secure.travis-ci.org/rbarrois/aionotify.png?branch=master
-    :target: http://travis-ci.org/rbarrois/aionotify/
-
 .. image:: https://img.shields.io/pypi/v/aionotify.svg
     :target: https://pypi.python.org/pypi/aionotify/
     :alt: Latest Version
