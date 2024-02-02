@@ -52,5 +52,4 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Filesystems",
     ],
-    test_suite='tests',
 )
