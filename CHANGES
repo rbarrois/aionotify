@@ -1,6 +1,14 @@
 ChangeLog
 =========
 
+0.3.0 (next release)
+--------------------
+
+*New:*
+
+    - Add support for Python 3.8+
+    - Drop support for Python <3.7
+
 .. _v0.2.0:
 
 0.2.0 (2016-04-04)
