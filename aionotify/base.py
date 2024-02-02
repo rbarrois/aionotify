@@ -1,6 +1,7 @@
 # Copyright (c) 2016 The aionotify project
 # This code is distributed under the two-clause BSD License.
 
+import asyncio
 import collections
 import ctypes
 import struct
@@ -78,9 +79,9 @@ class Watcher:
         self.descriptors[alias] = wd
         self.aliases[wd] = alias
 
-    async def setup(self, loop):
+    async def setup(self, loop=None):
         """Start the watcher, registering new watches if any."""
-        self._loop = loop
+        self._loop = loop or asyncio.get_running_loop()
 
         self._fd = LibC.inotify_init()
         for alias, (path, flags) in self.requests.items():
