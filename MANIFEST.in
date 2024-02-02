@@ -1,11 +1,10 @@
 include CHANGES CREDITS INSTALL LICENSE README.rst
 include requirements_dev.txt
+include Makefile tox.ini .flake8
 
 graft aionotify
 
-prune examples
-prune tests
+graft examples
+graft tests
 
-global-exclude .py[cod] __pycache__
-
-exclude Makefile
+global-exclude *.py[cod] __pycache__ .*.sw[po]
