@@ -1,5 +1,4 @@
 include CHANGES CREDITS INSTALL LICENSE README.rst
-include requirements_dev.txt
 include Makefile tox.ini .flake8
 
 graft aionotify
