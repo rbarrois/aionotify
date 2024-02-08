@@ -52,10 +52,10 @@ class Watcher:
             alias = path
         if alias in self.requests:
             raise ValueError("A watch request is already scheduled for alias %s" % alias)
-        self.requests[alias] = (path, flags)
         if self._fd is not None:
             # We've started, register the watch immediately.
             self._setup_watch(alias, path, flags)
+        self.requests[alias] = (path, flags)
 
     def unwatch(self, alias):
         """Stop watching a given rule."""
