@@ -88,7 +88,7 @@ class Watcher:
             self._setup_watch(alias, path, flags)
 
         # We pass ownership of the fd to the transport; it will close it.
-        self._stream, self._transport = await aioutils.stream_from_fd(self._fd, loop)
+        self._stream, self._transport = await aioutils.stream_from_fd(self._fd, self._loop)
 
     def close(self):
         """Schedule closure.
