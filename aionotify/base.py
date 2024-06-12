@@ -11,7 +11,7 @@ from . import aioutils
 Event = collections.namedtuple('Event', ['flags', 'cookie', 'name', 'alias'])
 
 
-_libc = ctypes.cdll.LoadLibrary('libc.so.6')
+_libc = ctypes.CDLL('libc.so.6', use_errno=True)
 
 
 class LibC:
@@ -64,7 +64,8 @@ class Watcher:
         wd = self.descriptors[alias]
         errno = LibC.inotify_rm_watch(self._fd, wd)
         if errno != 0:
-            raise IOError("Failed to close watcher %d: errno=%d" % (wd, errno))
+            raise IOError("Failed to close watcher %d: errno=%d" % (
+                wd, ctypes.get_errno()))
         del self.descriptors[alias]
         del self.requests[alias]
         del self.aliases[wd]
@@ -74,8 +75,8 @@ class Watcher:
         assert alias not in self.descriptors, "Registering alias %s twice!" % alias
         wd = LibC.inotify_add_watch(self._fd, path, flags)
         if wd < 0:
-            raise IOError("Error setting up watch on %s with flags %s: wd=%s" % (
-                path, flags, wd))
+            raise IOError("Error setting up watch on %s with flags %s: errno=%d" % (
+                path, flags, ctypes.get_errno()))
         self.descriptors[alias] = wd
         self.aliases[wd] = alias
 
@@ -84,6 +85,9 @@ class Watcher:
         self._loop = loop or asyncio.get_running_loop()
 
         self._fd = LibC.inotify_init()
+        if self._fd < 0:
+            raise IOError("Error setting up inotify on loop %s: errno=%d" % (
+                loop, ctypes.get_errno()))
         for alias, (path, flags) in self.requests.items():
             self._setup_watch(alias, path, flags)
 
